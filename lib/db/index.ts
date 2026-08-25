@@ -1,10 +1,11 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
+import { getDatabaseUrl } from "@/lib/database-url";
+
 import * as schema from "./schema";
 
-const connectionString =
-  process.env.DATABASE_URL ?? "postgresql://kanbn:kanbn@localhost:5432/kanbn";
+const connectionString = getDatabaseUrl();
 
 const globalForDatabase = globalThis as unknown as {
   kanbnSql?: ReturnType<typeof postgres>;

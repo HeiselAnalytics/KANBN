@@ -10,8 +10,6 @@ export const DEFAULT_BRANDING: BrandingConfig = {
   logoDarkUrl: "/assets/heisel-analytics-logo-on-dark.png",
 };
 
-type BrandingEnvironment = Readonly<Record<string, string | undefined>>;
-
 function normalizeName(value: string | undefined): string {
   const name = value?.trim();
   return name ? name.slice(0, 120) : DEFAULT_BRANDING.name;
@@ -20,7 +18,6 @@ function normalizeName(value: string | undefined): string {
 function normalizeLogoUrl(value: string | undefined, fallback: string): string {
   const url = value?.trim();
   if (!url) return fallback;
-  if (url.startsWith("/") && !url.startsWith("//")) return url;
 
   try {
     const parsed = new URL(url);
@@ -30,10 +27,10 @@ function normalizeLogoUrl(value: string | undefined, fallback: string): string {
   }
 }
 
-export function getBrandingConfig(environment: BrandingEnvironment = process.env): BrandingConfig {
+export function getBrandingConfig(settings: { applicationName?: string; logoLightUrl?: string; logoDarkUrl?: string }): BrandingConfig {
   return {
-    name: normalizeName(environment.KANBN_BRAND_NAME),
-    logoLightUrl: normalizeLogoUrl(environment.KANBN_BRAND_LOGO_LIGHT, DEFAULT_BRANDING.logoLightUrl),
-    logoDarkUrl: normalizeLogoUrl(environment.KANBN_BRAND_LOGO_DARK, DEFAULT_BRANDING.logoDarkUrl),
+    name: normalizeName(settings.applicationName),
+    logoLightUrl: normalizeLogoUrl(settings.logoLightUrl, DEFAULT_BRANDING.logoLightUrl),
+    logoDarkUrl: normalizeLogoUrl(settings.logoDarkUrl, DEFAULT_BRANDING.logoDarkUrl),
   };
 }

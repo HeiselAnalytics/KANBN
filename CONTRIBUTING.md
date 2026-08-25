@@ -19,7 +19,7 @@ Database integration tests truncate their target database. Run them only against
 
 ```bash
 docker compose exec postgres createdb -U kanbn kanbn_test
-RUN_DB_TESTS=1 DATABASE_URL=postgresql://kanbn:change-me@localhost:5432/kanbn_test npm test -- tests/kanban.integration.test.ts
+RUN_DB_TESTS=1 POSTGRES_DB=kanbn_test npm test -- tests/kanban.integration.test.ts
 ```
 
 Keep changes focused, include tests for behavior changes, and update the README when configuration or operator workflows change.

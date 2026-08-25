@@ -24,6 +24,8 @@ import type { Backup } from "@/lib/validation/backup";
 
 const DEFAULT_SETTINGS: AppSettings = {
   applicationName: "KANBN",
+  logoLightUrl: "",
+  logoDarkUrl: "",
   defaultBoard: "",
   language: "en",
   dateFormat: "dd.MM.yyyy",
@@ -57,6 +59,8 @@ export async function getSettings(): Promise<AppSettings> {
   const values = Object.fromEntries(rows.map((row) => [row.key, row.value]));
   return {
     applicationName: values.applicationName || DEFAULT_SETTINGS.applicationName,
+    logoLightUrl: values.logoLightUrl || "",
+    logoDarkUrl: values.logoDarkUrl || "",
     defaultBoard: values.defaultBoard || "",
     language: values.language === "de" ? "de" : "en",
     dateFormat:

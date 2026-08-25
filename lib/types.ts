@@ -90,6 +90,8 @@ export interface TemplateSummary {
 
 export interface AppSettings {
   applicationName: string;
+  logoLightUrl: string;
+  logoDarkUrl: string;
   defaultBoard: string;
   language: "en" | "de";
   dateFormat: "dd.MM.yyyy" | "MM/dd/yyyy" | "yyyy-MM-dd";

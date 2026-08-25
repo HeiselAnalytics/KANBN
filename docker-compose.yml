@@ -23,14 +23,13 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-kanbn}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-kanbn}
-      KANBN_BRAND_NAME: ${KANBN_BRAND_NAME:-Heisel Analytics}
-      KANBN_BRAND_LOGO_LIGHT: ${KANBN_BRAND_LOGO_LIGHT:-/assets/heisel-analytics-logo-on-light.png}
-      KANBN_BRAND_LOGO_DARK: ${KANBN_BRAND_LOGO_DARK:-/assets/heisel-analytics-logo-on-dark.png}
+      POSTGRES_DB: ${POSTGRES_DB:-kanbn}
+      POSTGRES_USER: ${POSTGRES_USER:-kanbn}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
     ports:
       - "${KANBN_PORT:-3000}:3000"
-    volumes:
-      - ./public/branding:/app/public/branding:ro
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 30s

@@ -19,5 +19,3 @@ node_modules/
 .next/
 coverage/
 *.tsbuildinfo
-/public/branding/*
-!/public/branding/.gitkeep

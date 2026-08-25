@@ -42,24 +42,13 @@ Change `POSTGRES_PASSWORD` in `.env` before exposing an installation. KANBN itse
 
 ## Custom branding
 
-The publisher logo in the bottom-left sidebar can be replaced without changing application code. KANBN supports separate logo variants for Light and Dark Mode.
+The publisher logo in the bottom-left sidebar can be replaced directly in **Settings → Appearance**. KANBN supports a separate external image link for Light and Dark Mode.
 
-1. Put your logo files in `public/branding/`. PNG, WebP, and SVG files are suitable. The directory is mounted into the Docker container and its custom contents are ignored by Git.
-2. Configure the branding in `.env`:
+1. Host the logo files at public HTTP or HTTPS URLs. PNG, WebP, and SVG files are suitable.
+2. Open **Settings → Appearance**.
+3. Enter the dark-text logo URL under **Logo URL · Light Mode** and the light-text logo URL under **Logo URL · Dark Mode**.
 
-```env
-KANBN_BRAND_NAME=Example Company
-KANBN_BRAND_LOGO_LIGHT=/branding/logo-on-light.png
-KANBN_BRAND_LOGO_DARK=/branding/logo-on-dark.png
-```
-
-3. Recreate the application container so it receives the updated environment:
-
-```bash
-docker compose up -d
-```
-
-Use a dark-text logo for light surfaces and a light-text logo for dark surfaces. Logos retain their aspect ratio and fit within the existing `156 × 28px` brand area. Absolute `https://` image URLs are supported as an alternative to local files. Removing the three variables restores the bundled Heisel Analytics branding.
+Changes save automatically. Logos retain their aspect ratio and fit within the existing `156 × 28px` brand area. Clear either field to restore the bundled Heisel Analytics logo for that theme. The configured links are included in KANBN JSON exports and restores.
 
 ## Development setup
 
@@ -84,23 +73,22 @@ Database integration tests are opt-in so the default unit suite does not mutate 
 
 ```bash
 docker compose exec postgres createdb -U kanbn kanbn_test
-RUN_DB_TESTS=1 DATABASE_URL=postgresql://kanbn:change-me@localhost:5432/kanbn_test npm test
+RUN_DB_TESTS=1 POSTGRES_DB=kanbn_test npm test
 ```
 
 ## Environment variables
 
 | Variable | Purpose | Default in Compose |
 | --- | --- | --- |
-| `DATABASE_URL` | PostgreSQL connection URL used by Next.js and Drizzle | Built from the PostgreSQL variables |
 | `POSTGRES_DB` | Database name | `kanbn` |
 | `POSTGRES_USER` | Database user | `kanbn` |
 | `POSTGRES_PASSWORD` | Database password | `change-me` |
+| `POSTGRES_HOST` | PostgreSQL hostname for local tools | `localhost` |
 | `POSTGRES_PORT` | PostgreSQL port published on localhost for development | `5432` |
 | `KANBN_PORT` | Published HTTP port | `3000` |
 | `NEXT_PUBLIC_APP_URL` | Canonical local URL for tooling | `http://localhost:3000` |
-| `KANBN_BRAND_NAME` | Accessible name of the publisher logo | `Heisel Analytics` |
-| `KANBN_BRAND_LOGO_LIGHT` | Logo URL for Light Mode | Bundled dark Heisel Analytics logo |
-| `KANBN_BRAND_LOGO_DARK` | Logo URL for Dark Mode | Bundled light Heisel Analytics logo |
+
+KANBN and Drizzle construct the connection URL internally from the five `POSTGRES_*` values. A complete database URL is neither required nor read from `.env`.
 
 ## Database migrations
 

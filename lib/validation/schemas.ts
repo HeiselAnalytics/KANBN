@@ -5,6 +5,15 @@ export const nameSchema = z.string().trim().min(1).max(120);
 export const titleSchema = z.string().trim().min(1).max(240);
 export const colorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
 export const sectionIconSchema = z.enum(["Folder", "Megaphone", "Settings", "Sailboat", "Briefcase", "Rocket", "Code", "Palette", "ShoppingBag", "CalendarDays", "CircleDollarSign", "Wrench"]);
+const externalLogoUrlSchema = z.string().trim().max(2_048).refine((value) => {
+  if (!value) return true;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}, "Enter an absolute HTTP or HTTPS URL");
 
 export const createBoardSchema = z.object({
   name: nameSchema,
@@ -27,6 +36,8 @@ export const cardUpdateSchema = z.object({
 
 export const settingsSchema = z.object({
   applicationName: nameSchema,
+  logoLightUrl: externalLogoUrlSchema,
+  logoDarkUrl: externalLogoUrlSchema,
   defaultBoard: z.string().max(80),
   language: z.enum(["en", "de"]),
   dateFormat: z.enum(["dd.MM.yyyy", "MM/dd/yyyy", "yyyy-MM-dd"]),
