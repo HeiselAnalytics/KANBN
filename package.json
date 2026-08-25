@@ -1,7 +1,16 @@
 {
   "name": "kanbn",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.2.0",
+  "private": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HeiselAnalytics/KANBN.git"
+  },
+  "bugs": {
+    "url": "https://github.com/HeiselAnalytics/KANBN/issues"
+  },
+  "homepage": "https://github.com/HeiselAnalytics/KANBN#readme",
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",

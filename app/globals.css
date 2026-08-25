@@ -73,7 +73,8 @@ h1, h2, h3, h4 { font-family: var(--font-heading); }
 .mobile-bar { display: none; }
 .sidebar-scrim { display: none; }
 .brand-title { height: 28px; font-family: var(--font-heading); font-size: 36px; font-weight: 600; line-height: 28px; letter-spacing: .01em; }
-.brand-logo { display: block; width: auto; max-width: 156px; height: 28px; object-fit: contain; }
+.brand-logo-pair { display: flex; width: 156px; max-width: 100%; height: 28px; align-items: flex-end; }
+.brand-logo { display: block; width: auto; max-width: 100%; height: auto; max-height: 28px; object-fit: contain; object-position: left bottom; }
 .brand-logo-wrap { padding-left: 10px; }
 .brand-logo-row { display: flex; min-height: 28px; align-items: flex-end; gap: 8px; }
 .brand-status-meta { display: flex; height: 28px; min-width: 0; flex-direction: column; justify-content: flex-end; gap: 2px; }

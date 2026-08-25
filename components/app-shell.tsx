@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState, useTransition } from "react";
 
 import { assignBoardSectionAction, createBoardAction, createBoardSectionAction, deleteBoardSectionAction, renameBoardSectionAction } from "@/app/actions";
+import type { BrandingConfig } from "@/lib/branding";
 import type { AppSettings, BoardSectionSummary, BoardSummary, TemplateSummary } from "@/lib/types";
 
 import { AppDialog, ConfirmDialog } from "./app-dialog";
@@ -20,6 +21,7 @@ interface AppShellProps {
   sections: BoardSectionSummary[];
   templates: TemplateSummary[];
   applicationName: string;
+  branding: BrandingConfig;
   projectVersion: string;
   defaultTheme: AppSettings["theme"];
   language: AppSettings["language"];
@@ -27,7 +29,7 @@ interface AppShellProps {
   children: ReactNode;
 }
 
-export function AppShell({ boards, sections, templates, applicationName, projectVersion, defaultTheme, language, currentTitle, children }: AppShellProps) {
+export function AppShell({ boards, sections, templates, applicationName, branding, projectVersion, defaultTheme, language, currentTitle, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -160,8 +162,13 @@ export function AppShell({ boards, sections, templates, applicationName, project
         </nav>
         <div className="brand-logo-wrap sidebar-brand-group">
           <div className="brand-logo-row">
-            <Image src="/assets/heisel-analytics-logo-on-light.png" alt="Heisel Analytics" width={700} height={203} className="brand-logo brand-logo-light" />
-            <Image src="/assets/heisel-analytics-logo-on-dark.png" alt="Heisel Analytics" width={700} height={203} className="brand-logo brand-logo-dark" />
+            <div className="brand-logo-pair" role="img" aria-label={branding.name}>
+              {/* Custom operator-provided logos can have any intrinsic dimensions. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={branding.logoLightUrl} alt="" className="brand-logo brand-logo-light" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={branding.logoDarkUrl} alt="" className="brand-logo brand-logo-dark" />
+            </div>
             <div className="brand-status-meta">
               <span className="brand-version">Version {projectVersion}</span>
               <span className="brand-health" role="status" aria-live="polite"><span>{health === "operational" ? "Fully operational" : health === "checking" ? "Checking status" : "Service unavailable"}</span><span className="health-dot" data-status={health} aria-hidden="true" /></span>
