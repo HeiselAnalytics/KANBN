@@ -40,6 +40,48 @@ Open [http://localhost:3000](http://localhost:3000). The `kanbn` container waits
 
 Change `POSTGRES_PASSWORD` in `.env` before exposing an installation. KANBN itself intentionally provides no access control; use a reverse proxy, Cloudflare Access, or a trusted internal network when protection is needed.
 
+## Production deployment behind a Docker reverse proxy
+
+Use `docker-compose.prod.yml` when Nginx or another reverse proxy runs in a separate Docker Compose project on the same server. This production topology publishes neither KANBN nor PostgreSQL on the host:
+
+```text
+Nginx → shared proxy network → KANBN → isolated backend network → PostgreSQL
+```
+
+Create the shared network once, configure `.env`, and start the production stack:
+
+```bash
+docker network create proxy
+cp .env.example .env
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml ps
+```
+
+Set the canonical URL in `.env` for the installation, for example:
+
+```env
+NEXT_PUBLIC_APP_URL=https://kanbn.hsla.cloud
+PROXY_NETWORK=proxy
+```
+
+Attach the reverse-proxy container to the same external network in its own Compose file:
+
+```yaml
+services:
+  nginx:
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
+    name: proxy
+```
+
+The proxy can then reach KANBN at `http://kanbn-app:3000`; container IP addresses and host port mappings are unnecessary. An example virtual host for `kanbn.hsla.cloud` is available at [`deploy/nginx/kanbn.conf.example`](deploy/nginx/kanbn.conf.example). Only KANBN joins the shared proxy network. PostgreSQL remains reachable solely from KANBN through the internal backend network.
+
+The network boundary does not add user authentication. Protect any internet-reachable KANBN hostname with an access gateway, authenticating reverse proxy, VPN, or restrictive allowlist.
+
 ## Custom branding
 
 The publisher logo in the bottom-left sidebar can be replaced directly in **Settings → Appearance**. KANBN supports a separate external image link for Light and Dark Mode.
@@ -87,6 +129,7 @@ RUN_DB_TESTS=1 POSTGRES_DB=kanbn_test npm test
 | `POSTGRES_PORT` | PostgreSQL port published on localhost for development | `5432` |
 | `KANBN_PORT` | Published HTTP port | `3000` |
 | `NEXT_PUBLIC_APP_URL` | Canonical local URL for tooling | `http://localhost:3000` |
+| `PROXY_NETWORK` | External Docker network used by the production Compose file | `proxy` |
 
 KANBN and Drizzle construct the connection URL internally from the five `POSTGRES_*` values. A complete database URL is neither required nor read from `.env`.
 
@@ -127,6 +170,15 @@ docker compose up -d --build
 ```
 
 Pending migrations run automatically before the updated application starts. Check status with `docker compose ps` and inspect application logs with `docker compose logs kanbn`.
+
+For a production proxy deployment, use the production Compose file consistently:
+
+```bash
+git pull --ff-only
+docker compose -f docker-compose.prod.yml pull postgres
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml ps
+```
 
 ## Architecture
 
