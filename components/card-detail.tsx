@@ -220,7 +220,7 @@ export function CardDetail({ card, board, settings, onBoard, onClose }: { card: 
               <button className="label-add-button" disabled={!cardColorName.trim()}>Add</button>
             </div>
           </form>
-          <p className="help mb-0 mt-2 text-xs">Reusable within this section. Used colors appear in the board legend.</p>
+          <p className="help mb-0 mt-2 text-xs">Available on every board. Used colors appear in the board legend.</p>
         </section>
         <section className="detail-tile detail-section">
           <h2 className="detail-section-title"><CalendarDays size={16} /> Due date</h2>
@@ -246,7 +246,7 @@ export function CardDetail({ card, board, settings, onBoard, onClose }: { card: 
               <input id="new-label-color" className="label-color-input" type="color" value={labelColor} onChange={(event) => setLabelColor(event.target.value)} title="Label color" />
               <button className="label-add-button" disabled={!labelName.trim()}>Add</button>
             </div>
-            <p className="help mb-0 mt-1 text-xs">Available to every board in this section.</p>
+            <p className="help mb-0 mt-1 text-xs">Available on every board.</p>
           </form>
         </section>
         <section className="detail-tile detail-section">
@@ -257,9 +257,9 @@ export function CardDetail({ card, board, settings, onBoard, onClose }: { card: 
     </div>
     <div className="dialog-actions"><span className="autosave-status mr-auto" role="status" aria-live="polite">{pending ? "Saving changes…" : ""}</span><button className="button button-danger" onClick={() => setCardDeleteOpen(true)}><Trash2 size={16} /> Delete card</button><button className="button button-secondary" onClick={() => void closeDetail()}>Close</button></div>
     <ConfirmDialog open={cardDeleteOpen} title="Delete card?" description={`“${card.title}” will be hidden and cannot be restored in the interface.`} confirmLabel="Delete card" danger onClose={() => setCardDeleteOpen(false)} onConfirm={removeCard} />
-    <ConfirmDialog open={Boolean(colorToDelete)} title="Delete card color?" description={`“${colorToDelete?.name ?? ""}” will be removed from every card using it in this section.`} confirmLabel="Delete color" danger onClose={() => setColorToDelete(null)} onConfirm={async () => { if (colorToDelete) await mutate(() => deleteCardColorAction(colorToDelete.publicId, board.publicId)); }} />
+    <ConfirmDialog open={Boolean(colorToDelete)} title="Delete card color?" description={`“${colorToDelete?.name ?? ""}” will be removed from every card using it across all boards.`} confirmLabel="Delete color" danger onClose={() => setColorToDelete(null)} onConfirm={async () => { if (colorToDelete) await mutate(() => deleteCardColorAction(colorToDelete.publicId, board.publicId)); }} />
     <ConfirmDialog open={Boolean(checklistToDelete)} title="Delete checklist?" description={`“${checklistToDelete?.title ?? ""}” and all of its items will be removed.`} confirmLabel="Delete checklist" danger onClose={() => setChecklistToDelete(null)} onConfirm={async () => { if (checklistToDelete) await mutate(() => deleteChecklistAction(checklistToDelete.publicId)); }} />
-    <ConfirmDialog open={Boolean(labelToDelete)} title="Delete shared label?" description={`“${labelToDelete?.name ?? ""}” will be removed from every card using it in this section.`} confirmLabel="Delete label" danger onClose={() => setLabelToDelete(null)} onConfirm={async () => { if (labelToDelete) await mutate(() => deleteLabelAction(labelToDelete.publicId, board.publicId)); }} />
+    <ConfirmDialog open={Boolean(labelToDelete)} title="Delete shared label?" description={`“${labelToDelete?.name ?? ""}” will be removed from every card using it across all boards.`} confirmLabel="Delete label" danger onClose={() => setLabelToDelete(null)} onConfirm={async () => { if (labelToDelete) await mutate(() => deleteLabelAction(labelToDelete.publicId, board.publicId)); }} />
   </dialog>;
 }
 

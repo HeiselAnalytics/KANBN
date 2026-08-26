@@ -57,6 +57,7 @@ const textSchema = z.string().trim().min(1).max(10_000);
 
 function refreshBoard(publicId?: string) {
   revalidatePath("/");
+  revalidatePath("/overview");
   revalidatePath("/settings");
   revalidatePath("/templates");
   if (publicId) revalidatePath(`/b/${publicId}`);

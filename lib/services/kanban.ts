@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, or, sql as drizzleSql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, sql as drizzleSql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import {
@@ -19,7 +19,7 @@ import {
 } from "@/lib/db/schema";
 import { createPublicId } from "@/lib/public-id";
 import { rankAfter, rankBetween, RANK_STEP } from "@/lib/rank";
-import type { AppSettings, BoardData, BoardSectionSummary, BoardSummary, TemplateSummary } from "@/lib/types";
+import type { AppSettings, BoardData, BoardSectionSummary, BoardSummary, OverviewData, TemplateSummary } from "@/lib/types";
 import type { Backup } from "@/lib/validation/backup";
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -52,6 +52,72 @@ export async function listBoardSections(): Promise<BoardSectionSummary[]> {
     .select({ publicId: boardSections.publicId, name: boardSections.name, icon: boardSections.icon, position: boardSections.position })
     .from(boardSections)
     .orderBy(asc(boardSections.position));
+}
+
+export async function getOverview(): Promise<OverviewData> {
+  const [boardRows, sectionRows, colorRows, labelRows, cardRows] = await Promise.all([
+    listBoards(),
+    listBoardSections(),
+    db.select().from(cardColors).orderBy(asc(cardColors.name)),
+    db.select().from(labels).orderBy(asc(labels.name)),
+    db
+      .select({
+        id: cards.id,
+        publicId: cards.publicId,
+        listPublicId: lists.publicId,
+        listName: lists.name,
+        title: cards.title,
+        description: cards.description,
+        position: cards.position,
+        dueDate: cards.dueDate,
+        boardPublicId: boards.publicId,
+        boardName: boards.name,
+        sectionPublicId: boardSections.publicId,
+        sectionName: boardSections.name,
+        colorPublicId: cardColors.publicId,
+        colorName: cardColors.name,
+        colorValue: cardColors.color,
+      })
+      .from(cards)
+      .innerJoin(lists, eq(cards.listId, lists.id))
+      .innerJoin(boards, eq(lists.boardId, boards.id))
+      .leftJoin(boardSections, eq(boards.sectionId, boardSections.id))
+      .leftJoin(cardColors, eq(cards.colorId, cardColors.id))
+      .where(and(isNull(cards.deletedAt), isNull(lists.deletedAt), isNull(boards.deletedAt))),
+  ]);
+  const cardIds = cardRows.map((card) => card.id);
+  const cardLabelRows = cardIds.length
+    ? await db
+        .select({ cardId: cardLabels.cardId, publicId: labels.publicId, name: labels.name, color: labels.color })
+        .from(cardLabels)
+        .innerJoin(labels, eq(cardLabels.labelId, labels.id))
+        .where(inArray(cardLabels.cardId, cardIds))
+    : [];
+
+  return {
+    boards: boardRows,
+    sections: sectionRows,
+    colors: colorRows.map(({ publicId, name, color }) => ({ publicId, name, color })),
+    labels: labelRows.map(({ publicId, name, color }) => ({ publicId, name, color })),
+    cards: cardRows.map((card) => ({
+      publicId: card.publicId,
+      listPublicId: card.listPublicId,
+      title: card.title,
+      description: card.description,
+      position: card.position,
+      dueDate: card.dueDate ? iso(card.dueDate) : null,
+      color: card.colorPublicId && card.colorName && card.colorValue ? { publicId: card.colorPublicId, name: card.colorName, color: card.colorValue } : null,
+      labels: cardLabelRows.filter((label) => label.cardId === card.id).map(({ publicId, name, color }) => ({ publicId, name, color })),
+      checklists: [],
+      comments: [],
+      activity: [],
+      boardPublicId: card.boardPublicId,
+      boardName: card.boardName,
+      sectionPublicId: card.sectionPublicId,
+      sectionName: card.sectionName,
+      listName: card.listName,
+    })),
+  };
 }
 
 export async function getSettings(): Promise<AppSettings> {
@@ -120,8 +186,8 @@ export async function getBoard(publicId: string, markOpened = false): Promise<Bo
   const cardIds = cardRows.map((row) => row.id);
 
   const [colorRows, labelRows, cardLabelRows, checklistRows, commentRows, activityRows] = await Promise.all([
-    db.select().from(cardColors).where(board.sectionId ? or(eq(cardColors.boardId, board.id), eq(cardColors.sectionId, board.sectionId)) : eq(cardColors.boardId, board.id)).orderBy(asc(cardColors.name)),
-    db.select().from(labels).where(board.sectionId ? or(eq(labels.boardId, board.id), eq(labels.sectionId, board.sectionId)) : eq(labels.boardId, board.id)).orderBy(asc(labels.name)),
+    db.select().from(cardColors).orderBy(asc(cardColors.name)),
+    db.select().from(labels).orderBy(asc(labels.name)),
     cardIds.length ? db.select().from(cardLabels).where(inArray(cardLabels.cardId, cardIds)) : [],
     cardIds.length
       ? db.select().from(checklists).where(inArray(checklists.cardId, cardIds)).orderBy(asc(checklists.position))
@@ -393,12 +459,11 @@ export async function updateCard(publicId: string, title: string, description: s
 
 export async function setCardColor(publicId: string, colorPublicId?: string): Promise<BoardData> {
   const boardPublicId = await boardPublicIdForCard(publicId);
-  const [board] = await db.select({ id: boards.id, sectionId: boards.sectionId }).from(boards).where(eq(boards.publicId, boardPublicId)).limit(1);
   const [color] = colorPublicId
     ? await db
         .select({ id: cardColors.id, name: cardColors.name })
         .from(cardColors)
-        .where(and(eq(cardColors.publicId, colorPublicId), board.sectionId ? or(eq(cardColors.boardId, board.id), eq(cardColors.sectionId, board.sectionId)) : eq(cardColors.boardId, board.id)))
+        .where(eq(cardColors.publicId, colorPublicId))
         .limit(1)
     : [];
   if (colorPublicId && !color) throw new Error("Card color not found");
@@ -412,9 +477,9 @@ export async function setCardColor(publicId: string, colorPublicId?: string): Pr
 }
 
 export async function createCardColor(boardPublicId: string, name: string, color: string): Promise<BoardData> {
-  const [board] = await db.select({ id: boards.id, sectionId: boards.sectionId }).from(boards).where(eq(boards.publicId, boardPublicId)).limit(1);
+  const [board] = await db.select({ id: boards.id }).from(boards).where(eq(boards.publicId, boardPublicId)).limit(1);
   if (!board) throw new Error("Board not found");
-  await db.insert(cardColors).values({ publicId: createPublicId("clr"), boardId: board.sectionId ? null : board.id, sectionId: board.sectionId, name, color });
+  await db.insert(cardColors).values({ publicId: createPublicId("clr"), boardId: null, sectionId: null, name, color });
   return (await getBoard(boardPublicId)) as BoardData;
 }
 
@@ -446,9 +511,9 @@ export async function deleteCard(publicId: string): Promise<BoardData> {
 }
 
 export async function createLabel(boardPublicId: string, name: string, color: string): Promise<BoardData> {
-  const [board] = await db.select({ id: boards.id, sectionId: boards.sectionId }).from(boards).where(eq(boards.publicId, boardPublicId)).limit(1);
+  const [board] = await db.select({ id: boards.id }).from(boards).where(eq(boards.publicId, boardPublicId)).limit(1);
   if (!board) throw new Error("Board not found");
-  await db.insert(labels).values({ publicId: createPublicId("lbl"), boardId: board.sectionId ? null : board.id, sectionId: board.sectionId, name, color });
+  await db.insert(labels).values({ publicId: createPublicId("lbl"), boardId: null, sectionId: null, name, color });
   return (await getBoard(boardPublicId)) as BoardData;
 }
 

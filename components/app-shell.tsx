@@ -1,6 +1,6 @@
 "use client";
 
-import { Briefcase, CalendarDays, CircleDollarSign, Code, Folder, FolderPlus, LayoutTemplate, Megaphone, Menu, MoreHorizontal, Palette, Plus, Rocket, Sailboat, Settings, ShoppingBag, Wrench, X, type LucideIcon } from "lucide-react";
+import { Briefcase, CalendarDays, CircleDollarSign, Code, Folder, FolderPlus, LayoutDashboard, LayoutTemplate, Megaphone, Menu, MoreHorizontal, Palette, Plus, Rocket, Sailboat, Settings, ShoppingBag, Wrench, X, type LucideIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -132,6 +132,7 @@ export function AppShell({ boards, sections, templates, applicationName, brandin
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col">
+          <Link href="/overview" className="nav-item mb-4" data-active={pathname === "/overview"} onClick={() => setSidebarOpen(false)}><LayoutDashboard size={16} /> Overview</Link>
           <div className="sidebar-section-title mb-2 px-2">Boards</div>
           <nav className="sidebar-board-nav min-h-0 flex-1 overflow-y-auto" aria-label="Boards">
             {boards.filter((board) => !board.sectionPublicId).map(boardLink)}
@@ -185,7 +186,7 @@ export function AppShell({ boards, sections, templates, applicationName, brandin
         {children}
       </main>
 
-      <dialog ref={dialogRef} className="dialog" onClose={() => setError("")}>
+      <dialog ref={dialogRef} className="dialog dialog-popovers-visible" onClose={() => setError("")}>
         <form method="dialog" onSubmit={(event) => { event.preventDefault(); createBoard(); }}>
           <div className="mb-6 flex items-start justify-between gap-4">
             <div><h2 className="m-0 text-xl font-semibold">Create board</h2><p className="muted mb-0 mt-1">Start empty or use a local template.</p></div>

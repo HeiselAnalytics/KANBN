@@ -80,6 +80,22 @@ export interface BoardSectionSummary {
   position: number;
 }
 
+export interface OverviewCardData extends CardData {
+  boardPublicId: string;
+  boardName: string;
+  sectionPublicId: string | null;
+  sectionName: string | null;
+  listName: string;
+}
+
+export interface OverviewData {
+  cards: OverviewCardData[];
+  boards: BoardSummary[];
+  sections: BoardSectionSummary[];
+  colors: CardColorData[];
+  labels: LabelData[];
+}
+
 export interface TemplateSummary {
   publicId: string;
   name: string;

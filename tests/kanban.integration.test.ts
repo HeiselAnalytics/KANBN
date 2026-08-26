@@ -49,12 +49,15 @@ database("KANBN persistence", () => {
     expect(sections.map((entry) => entry.name)).toEqual(["Admin", "Marketing"]);
     const boardId = await createBoard("Campaigns", "default", section.publicId);
     const secondBoardId = await createBoard("Website", "default", section.publicId);
+    const unsectionedBoardId = await createBoard("Operations", "default");
     await createLabel(boardId, "Marketing", "#FFAA00");
     await createCardColor(boardId, "Campaign", "#DF3F3F");
     expect((await listBoards())[0]).toMatchObject({ publicId: boardId, sectionPublicId: section.publicId });
     expect((await getBoard(boardId))?.lists.map((list) => list.name)).toEqual(["IN PROGRESS", "TODO", "BACKLOG", "DONE"]);
     expect((await getBoard(secondBoardId))?.labels.map((label) => label.name)).toContain("Marketing");
     expect((await getBoard(secondBoardId))?.colors.map((color) => color.name)).toContain("Campaign");
+    expect((await getBoard(unsectionedBoardId))?.labels.map((label) => label.name)).toContain("Marketing");
+    expect((await getBoard(unsectionedBoardId))?.colors.map((color) => color.name)).toContain("Campaign");
     await assignBoardSection(boardId);
     expect((await listBoards())[0].sectionPublicId).toBeNull();
   });
