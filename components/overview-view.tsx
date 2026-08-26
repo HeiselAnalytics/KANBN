@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, Columns3, Folder, LayoutDashboard, RotateCcw, Search } from "lucide-react";
+import { Calendar, ChevronDown, Columns3, Folder, LayoutDashboard, RotateCcw, Search } from "lucide-react";
 import Link from "next/link";
 import { type CSSProperties, useMemo, useSyncExternalStore } from "react";
 
@@ -15,7 +15,7 @@ import {
   type OverviewDueFilter,
   type OverviewFilters,
 } from "@/lib/overview";
-import type { AppSettings, BoardSectionSummary, BoardSummary, CardColorData, LabelData, OverviewCardData } from "@/lib/types";
+import type { AppSettings, BoardSectionSummary, BoardSummary, CardColorData, LabelData, OverviewCardData, OverviewListSummary } from "@/lib/types";
 
 import { CustomSelect } from "./custom-select";
 
@@ -23,6 +23,7 @@ interface OverviewViewProps {
   cards: OverviewCardData[];
   boards: BoardSummary[];
   sections: BoardSectionSummary[];
+  lists: OverviewListSummary[];
   colors: CardColorData[];
   labels: LabelData[];
   settings: AppSettings;
@@ -88,10 +89,9 @@ function formatDueDate(value: string, settings: AppSettings) {
   return `${datePart}, ${timePart}`;
 }
 
-function FilterGroup({ title, values, selected, onToggle, appearance = "default" }: { title: string; values: { id: string; name: string; color?: string | null }[]; selected: string[]; onToggle: (id: string) => void; appearance?: "default" | "labels" }) {
-  return <fieldset className="overview-filter-group">
-    <legend className="field-label">{title}</legend>
-    <div className="overview-check-list">
+function FilterGroup({ title, values, selected, onToggle, appearance = "default", collapsible = false }: { title: string; values: { id: string; name: string; color?: string | null }[]; selected: string[]; onToggle: (id: string) => void; appearance?: "default" | "labels"; collapsible?: boolean }) {
+  const selectionHint = selected.length ? `${selected.length} selected` : "All included";
+  const options = <div className="overview-check-list">
       {values.map((value) => <label key={value.id} className="overview-check-row">
         <input type="checkbox" checked={selected.includes(value.id)} onChange={() => onToggle(value.id)} />
         {appearance === "labels" && value.color ? <span className="label-badge" style={{ "--label-color": value.color } as CSSProperties} title={value.name}><span className="label-dot" aria-hidden="true" /><span className="truncate">{value.name}</span></span> : <>
@@ -99,33 +99,43 @@ function FilterGroup({ title, values, selected, onToggle, appearance = "default"
           <span className="min-w-0 flex-1 truncate" title={value.name}>{value.name}</span>
         </>}
       </label>)}
-    </div>
-    <span className="overview-filter-hint">{selected.length ? `${selected.length} selected` : "All included"}</span>
+    </div>;
+
+  if (collapsible) return <details className="overview-filter-group overview-filter-collapsible">
+    <summary className="overview-filter-summary"><span className="field-label">{title}</span><span className="overview-filter-hint">{selectionHint}</span><ChevronDown size={16} aria-hidden="true" /></summary>
+    {options}
+  </details>;
+
+  return <fieldset className="overview-filter-group">
+    <legend className="overview-filter-legend"><span className="overview-filter-legend-row"><span className="field-label">{title}</span><span className="overview-filter-hint">{selectionHint}</span></span></legend>
+    {options}
   </fieldset>;
 }
 
-export function OverviewView({ cards, boards, sections, colors, labels, settings, serverNow }: OverviewViewProps) {
+export function OverviewView({ cards, boards, sections, lists, colors, labels, settings, serverNow }: OverviewViewProps) {
   const filterSnapshot = useSyncExternalStore(subscribeToFilters, getFilterSnapshot, () => "");
   const filters = useMemo(() => {
     const stored = filtersFromSnapshot(filterSnapshot);
     const sectionIds = new Set([NO_SECTION_FILTER, ...sections.map((section) => section.publicId)]);
     const boardIds = new Set(boards.map((board) => board.publicId));
+    const listIds = new Set(lists.map((list) => list.publicId));
     const colorIds = new Set([NO_COLOR_FILTER, ...colors.map((color) => color.publicId)]);
     const labelIds = new Set(labels.map((label) => label.publicId));
     return {
       ...stored,
       sections: stored.sections.filter((id) => sectionIds.has(id)),
       boards: stored.boards.filter((id) => boardIds.has(id)),
+      lists: stored.lists.filter((id) => listIds.has(id)),
       colors: stored.colors.filter((id) => colorIds.has(id)),
       labels: stored.labels.filter((id) => labelIds.has(id)),
     };
-  }, [boards, colors, filterSnapshot, labels, sections]);
+  }, [boards, colors, filterSnapshot, labels, lists, sections]);
 
   const visibleCards = useMemo(
     () => cards.filter((card) => matchesOverviewFilters(card, filters, serverNow)).sort(sortOverviewCards),
     [cards, filters, serverNow],
   );
-  const activeFilterCount = filters.sections.length + filters.boards.length + filters.colors.length + filters.labels.length + Number(filters.due !== "all") + Number(Boolean(filters.search.trim()));
+  const activeFilterCount = filters.sections.length + filters.boards.length + filters.lists.length + filters.colors.length + filters.labels.length + Number(filters.due !== "all") + Number(Boolean(filters.search.trim()));
 
   function update<K extends keyof OverviewFilters>(key: K, value: OverviewFilters[K]) {
     saveFilters({ ...filters, [key]: value });
@@ -144,7 +154,7 @@ export function OverviewView({ cards, boards, sections, colors, labels, settings
         </div>
         <label className="field">
           <span className="field-label">Search</span>
-          <span className="overview-search"><Search size={16} /><input className="input" value={filters.search} onChange={(event) => update("search", event.target.value)} placeholder="Title, board, color, label…" /></span>
+          <span className="overview-search"><Search size={16} /><input className="input" value={filters.search} onChange={(event) => update("search", event.target.value)} placeholder="Title, board, list, color, label…" /></span>
         </label>
         <CustomSelect label="Due date · What is due soon?" value={filters.due} onChange={(value) => update("due", value as OverviewDueFilter)} options={[
           { value: "next7", label: "Next 7 days" },
@@ -156,10 +166,13 @@ export function OverviewView({ cards, boards, sections, colors, labels, settings
           { value: "none", label: "Without due date" },
           { value: "all", label: "All cards" },
         ]} />
-        <FilterGroup title="Sections" values={[{ id: NO_SECTION_FILTER, name: "Without section" }, ...sections.map((section) => ({ id: section.publicId, name: section.name }))]} selected={filters.sections} onToggle={(id) => update("sections", toggleSelection(filters.sections, id))} />
-        <FilterGroup title="Boards" values={boards.map((board) => ({ id: board.publicId, name: board.name }))} selected={filters.boards} onToggle={(id) => update("boards", toggleSelection(filters.boards, id))} />
-        <FilterGroup title="Card colors" values={[{ id: NO_COLOR_FILTER, name: "Without color", color: null }, ...colors.map((color) => ({ id: color.publicId, name: color.name, color: color.color }))]} selected={filters.colors} onToggle={(id) => update("colors", toggleSelection(filters.colors, id))} />
+        <FilterGroup title="Lists" values={lists.map((list) => ({ id: list.publicId, name: list.name }))} selected={filters.lists} onToggle={(id) => update("lists", toggleSelection(filters.lists, id))} />
         {labels.length > 0 && <FilterGroup title="Labels" appearance="labels" values={labels.map((label) => ({ id: label.publicId, name: label.name, color: label.color }))} selected={filters.labels} onToggle={(id) => update("labels", toggleSelection(filters.labels, id))} />}
+        <div className="overview-filter-collapsed-groups">
+          <FilterGroup title="Sections" collapsible values={[{ id: NO_SECTION_FILTER, name: "Without section" }, ...sections.map((section) => ({ id: section.publicId, name: section.name }))]} selected={filters.sections} onToggle={(id) => update("sections", toggleSelection(filters.sections, id))} />
+          <FilterGroup title="Boards" collapsible values={boards.map((board) => ({ id: board.publicId, name: board.name }))} selected={filters.boards} onToggle={(id) => update("boards", toggleSelection(filters.boards, id))} />
+          <FilterGroup title="Card colors" collapsible values={[{ id: NO_COLOR_FILTER, name: "Without color", color: null }, ...colors.map((color) => ({ id: color.publicId, name: color.name, color: color.color }))]} selected={filters.colors} onToggle={(id) => update("colors", toggleSelection(filters.colors, id))} />
+        </div>
       </aside>
 
       <main className="overview-content">
@@ -181,8 +194,8 @@ function OverviewCard({ card, settings, serverNow }: { card: OverviewCardData; s
   const overdue = Boolean(card.dueDate && new Date(card.dueDate).getTime() < serverNow);
   return <article className="kanban-card overview-card" style={cardStyle} data-colored={Boolean(card.color)}>
     <div className="overview-card-origin">
-      <span title={card.sectionName ?? "Without section"}><Folder size={13} aria-hidden="true" />{card.sectionName ?? "Without section"}</span>
-      <Link href={`/b/${card.boardPublicId}`} title={`Open ${card.boardName}`}><Columns3 size={13} aria-hidden="true" />{card.boardName}</Link>
+      <span className="overview-section-name" title={card.sectionName ?? "Without section"}><Folder size={13} aria-hidden="true" />{card.sectionName ?? "Without section"}</span>
+      <Link className="overview-board-link" href={`/b/${card.boardPublicId}`} title={`Open ${card.boardName}`}><Columns3 size={13} aria-hidden="true" />{card.boardName}</Link>
       <span className="overview-list-name" title={card.listName}>{card.listName}</span>
     </div>
     <Link className="card-open no-underline" href={`/b/${card.boardPublicId}`}>

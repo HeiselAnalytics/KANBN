@@ -11,6 +11,7 @@ export interface OverviewFilters {
   due: OverviewDueFilter;
   sections: string[];
   boards: string[];
+  lists: string[];
   colors: string[];
   labels: string[];
 }
@@ -20,6 +21,7 @@ export const DEFAULT_OVERVIEW_FILTERS: OverviewFilters = {
   due: "next14",
   sections: [],
   boards: [],
+  lists: [],
   colors: [],
   labels: [],
 };
@@ -38,6 +40,7 @@ export function parseOverviewFilters(value: unknown): OverviewFilters {
     due: typeof candidate.due === "string" && DUE_FILTERS.has(candidate.due as OverviewDueFilter) ? candidate.due as OverviewDueFilter : DEFAULT_OVERVIEW_FILTERS.due,
     sections: stringArray(candidate.sections),
     boards: stringArray(candidate.boards),
+    lists: stringArray(candidate.lists),
     colors: stringArray(candidate.colors),
     labels: stringArray(candidate.labels),
   };
@@ -63,6 +66,7 @@ export function matchesOverviewFilters(card: OverviewCardData, filters: Overview
   const sectionId = card.sectionPublicId ?? NO_SECTION_FILTER;
   if (filters.sections.length && !filters.sections.includes(sectionId)) return false;
   if (filters.boards.length && !filters.boards.includes(card.boardPublicId)) return false;
+  if (filters.lists.length && !filters.lists.includes(card.listPublicId)) return false;
   const colorId = card.color?.publicId ?? NO_COLOR_FILTER;
   if (filters.colors.length && !filters.colors.includes(colorId)) return false;
   if (filters.labels.length && !filters.labels.some((labelId) => card.labels.some((label) => label.publicId === labelId))) return false;

@@ -88,10 +88,18 @@ export interface OverviewCardData extends CardData {
   listName: string;
 }
 
+export interface OverviewListSummary {
+  publicId: string;
+  name: string;
+  boardPublicId: string;
+  boardName: string;
+}
+
 export interface OverviewData {
   cards: OverviewCardData[];
   boards: BoardSummary[];
   sections: BoardSectionSummary[];
+  lists: OverviewListSummary[];
   colors: CardColorData[];
   labels: LabelData[];
 }

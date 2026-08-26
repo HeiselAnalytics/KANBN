@@ -55,9 +55,15 @@ export async function listBoardSections(): Promise<BoardSectionSummary[]> {
 }
 
 export async function getOverview(): Promise<OverviewData> {
-  const [boardRows, sectionRows, colorRows, labelRows, cardRows] = await Promise.all([
+  const [boardRows, sectionRows, listRows, colorRows, labelRows, cardRows] = await Promise.all([
     listBoards(),
     listBoardSections(),
+    db
+      .select({ publicId: lists.publicId, name: lists.name, boardPublicId: boards.publicId, boardName: boards.name })
+      .from(lists)
+      .innerJoin(boards, eq(lists.boardId, boards.id))
+      .where(and(isNull(lists.deletedAt), isNull(boards.deletedAt)))
+      .orderBy(asc(boards.position), asc(lists.position)),
     db.select().from(cardColors).orderBy(asc(cardColors.name)),
     db.select().from(labels).orderBy(asc(labels.name)),
     db
@@ -97,6 +103,7 @@ export async function getOverview(): Promise<OverviewData> {
   return {
     boards: boardRows,
     sections: sectionRows,
+    lists: listRows,
     colors: colorRows.map(({ publicId, name, color }) => ({ publicId, name, color })),
     labels: labelRows.map(({ publicId, name, color }) => ({ publicId, name, color })),
     cards: cardRows.map((card) => ({

@@ -49,6 +49,12 @@ describe("overview filters", () => {
     expect(matchesOverviewFilters(card(), { ...filters, colors: [NO_COLOR_FILTER] }, NOW)).toBe(true);
   });
 
+  it("filters by a specific list", () => {
+    const filters = { ...DEFAULT_OVERVIEW_FILTERS, due: "all" as const, lists: ["lst_1"] };
+    expect(matchesOverviewFilters(card(), filters, NOW)).toBe(true);
+    expect(matchesOverviewFilters(card({ listPublicId: "lst_other", listName: "DONE" }), filters, NOW)).toBe(false);
+  });
+
   it("recovers safe values from persisted filter data", () => {
     expect(parseOverviewFilters({ due: "invalid", search: 3, boards: ["brd_1", 4] })).toEqual({ ...DEFAULT_OVERVIEW_FILTERS, boards: ["brd_1"] });
   });
