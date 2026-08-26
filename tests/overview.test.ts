@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_OVERVIEW_FILTERS, matchesOverviewFilters, NO_COLOR_FILTER, NO_SECTION_FILTER, parseOverviewFilters, sortOverviewCards } from "@/lib/overview";
-import type { OverviewCardData } from "@/lib/types";
+import { DEFAULT_OVERVIEW_FILTERS, getOverviewListFilterOptions, matchesOverviewFilters, NO_COLOR_FILTER, NO_SECTION_FILTER, overviewListFilterKey, parseOverviewFilters, sortOverviewCards } from "@/lib/overview";
+import type { OverviewCardData, OverviewListSummary } from "@/lib/types";
 
 const NOW = new Date("2026-08-26T10:00:00Z").getTime();
 
@@ -49,10 +49,24 @@ describe("overview filters", () => {
     expect(matchesOverviewFilters(card(), { ...filters, colors: [NO_COLOR_FILTER] }, NOW)).toBe(true);
   });
 
-  it("filters by a specific list", () => {
-    const filters = { ...DEFAULT_OVERVIEW_FILTERS, due: "all" as const, lists: ["lst_1"] };
+  it("filters every board by the selected list name", () => {
+    const filters = { ...DEFAULT_OVERVIEW_FILTERS, due: "all" as const, lists: [overviewListFilterKey("TODO")] };
     expect(matchesOverviewFilters(card(), filters, NOW)).toBe(true);
+    expect(matchesOverviewFilters(card({ listPublicId: "lst_other_board", boardPublicId: "brd_other" }), filters, NOW)).toBe(true);
     expect(matchesOverviewFilters(card({ listPublicId: "lst_other", listName: "DONE" }), filters, NOW)).toBe(false);
+  });
+
+  it("offers duplicate list names only once", () => {
+    const lists: OverviewListSummary[] = [
+      { publicId: "lst_1", name: "TODO", boardPublicId: "brd_1", boardName: "Product" },
+      { publicId: "lst_2", name: " todo ", boardPublicId: "brd_2", boardName: "Marketing" },
+      { publicId: "lst_3", name: "DONE", boardPublicId: "brd_2", boardName: "Marketing" },
+    ];
+
+    expect(getOverviewListFilterOptions(lists)).toEqual([
+      { id: overviewListFilterKey("TODO"), name: "TODO" },
+      { id: overviewListFilterKey("DONE"), name: "DONE" },
+    ]);
   });
 
   it("recovers safe values from persisted filter data", () => {

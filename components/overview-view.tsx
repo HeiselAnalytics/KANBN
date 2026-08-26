@@ -6,10 +6,12 @@ import { type CSSProperties, useMemo, useSyncExternalStore } from "react";
 
 import {
   DEFAULT_OVERVIEW_FILTERS,
+  getOverviewListFilterOptions,
   matchesOverviewFilters,
   NO_COLOR_FILTER,
   NO_SECTION_FILTER,
   OVERVIEW_FILTER_STORAGE_KEY,
+  overviewListFilterKey,
   parseOverviewFilters,
   sortOverviewCards,
   type OverviewDueFilter,
@@ -114,22 +116,24 @@ function FilterGroup({ title, values, selected, onToggle, appearance = "default"
 
 export function OverviewView({ cards, boards, sections, lists, colors, labels, settings, serverNow }: OverviewViewProps) {
   const filterSnapshot = useSyncExternalStore(subscribeToFilters, getFilterSnapshot, () => "");
+  const listFilterOptions = useMemo(() => getOverviewListFilterOptions(lists), [lists]);
   const filters = useMemo(() => {
     const stored = filtersFromSnapshot(filterSnapshot);
     const sectionIds = new Set([NO_SECTION_FILTER, ...sections.map((section) => section.publicId)]);
     const boardIds = new Set(boards.map((board) => board.publicId));
-    const listIds = new Set(lists.map((list) => list.publicId));
+    const listIds = new Set(listFilterOptions.map((list) => list.id));
+    const legacyListIds = new Map(lists.map((list) => [list.publicId, overviewListFilterKey(list.name)]));
     const colorIds = new Set([NO_COLOR_FILTER, ...colors.map((color) => color.publicId)]);
     const labelIds = new Set(labels.map((label) => label.publicId));
     return {
       ...stored,
       sections: stored.sections.filter((id) => sectionIds.has(id)),
       boards: stored.boards.filter((id) => boardIds.has(id)),
-      lists: stored.lists.filter((id) => listIds.has(id)),
+      lists: Array.from(new Set(stored.lists.map((id) => legacyListIds.get(id) ?? id))).filter((id) => listIds.has(id)),
       colors: stored.colors.filter((id) => colorIds.has(id)),
       labels: stored.labels.filter((id) => labelIds.has(id)),
     };
-  }, [boards, colors, filterSnapshot, labels, lists, sections]);
+  }, [boards, colors, filterSnapshot, labels, listFilterOptions, lists, sections]);
 
   const visibleCards = useMemo(
     () => cards.filter((card) => matchesOverviewFilters(card, filters, serverNow)).sort(sortOverviewCards),
@@ -166,7 +170,7 @@ export function OverviewView({ cards, boards, sections, lists, colors, labels, s
           { value: "none", label: "Without due date" },
           { value: "all", label: "All cards" },
         ]} />
-        <FilterGroup title="Lists" values={lists.map((list) => ({ id: list.publicId, name: list.name }))} selected={filters.lists} onToggle={(id) => update("lists", toggleSelection(filters.lists, id))} />
+        <FilterGroup title="Lists" values={listFilterOptions} selected={filters.lists} onToggle={(id) => update("lists", toggleSelection(filters.lists, id))} />
         {labels.length > 0 && <FilterGroup title="Labels" appearance="labels" values={labels.map((label) => ({ id: label.publicId, name: label.name, color: label.color }))} selected={filters.labels} onToggle={(id) => update("labels", toggleSelection(filters.labels, id))} />}
         <div className="overview-filter-collapsed-groups">
           <FilterGroup title="Sections" collapsible values={[{ id: NO_SECTION_FILTER, name: "Without section" }, ...sections.map((section) => ({ id: section.publicId, name: section.name }))]} selected={filters.sections} onToggle={(id) => update("sections", toggleSelection(filters.sections, id))} />

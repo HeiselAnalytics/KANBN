@@ -1,4 +1,4 @@
-import type { OverviewCardData } from "@/lib/types";
+import type { OverviewCardData, OverviewListSummary } from "@/lib/types";
 
 export const OVERVIEW_FILTER_STORAGE_KEY = "kanbn-overview-filters-v1";
 export const NO_SECTION_FILTER = "__without_section__";
@@ -27,6 +27,23 @@ export const DEFAULT_OVERVIEW_FILTERS: OverviewFilters = {
 };
 
 const DUE_FILTERS = new Set<OverviewDueFilter>(["all", "scheduled", "overdue", "today", "next7", "next14", "next30", "none"]);
+
+function normalizedListName(name: string): string {
+  return name.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+export function overviewListFilterKey(name: string): string {
+  return `list-name:${normalizedListName(name)}`;
+}
+
+export function getOverviewListFilterOptions(lists: OverviewListSummary[]): { id: string; name: string }[] {
+  const options = new Map<string, string>();
+  for (const list of lists) {
+    const id = overviewListFilterKey(list.name);
+    if (!options.has(id)) options.set(id, list.name.trim());
+  }
+  return Array.from(options, ([id, name]) => ({ id, name }));
+}
 
 function stringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
@@ -66,7 +83,7 @@ export function matchesOverviewFilters(card: OverviewCardData, filters: Overview
   const sectionId = card.sectionPublicId ?? NO_SECTION_FILTER;
   if (filters.sections.length && !filters.sections.includes(sectionId)) return false;
   if (filters.boards.length && !filters.boards.includes(card.boardPublicId)) return false;
-  if (filters.lists.length && !filters.lists.includes(card.listPublicId)) return false;
+  if (filters.lists.length && !filters.lists.includes(overviewListFilterKey(card.listName))) return false;
   const colorId = card.color?.publicId ?? NO_COLOR_FILTER;
   if (filters.colors.length && !filters.colors.includes(colorId)) return false;
   if (filters.labels.length && !filters.labels.some((labelId) => card.labels.some((label) => label.publicId === labelId))) return false;
